@@ -1,0 +1,39 @@
+# Local audio data, separated stems, and precomputed song analysis (strictly separated from code)
+data/
+stems_cache/
+songs/
+songs_analysis.js
+catalog.json
+*.m4a
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.aac
+
+# Python virtual environments & caches
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Model weight caches (Demucs / Torch / HuggingFace)
+.cache/
+*.th
+*.pth
+*.pt
+*.ckpt
+
+# macOS & IDE metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.env.*

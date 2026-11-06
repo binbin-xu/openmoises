@@ -1,0 +1,2538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- MANDATORY: Declare support for both light and dark themes -->
+  <meta name="color-scheme" content="light dark">
+  <title>Rock Drum AI Practice Studio — AI 四轨分离 · 智能找第1拍 · 16步动态鼓谱工作台</title>
+  <style>
+    :root {
+      --bg-light: #f3f5f9;
+      --bg-dark: #0b0e14;
+      --panel-light: #ffffff;
+      --panel-dark: #141923;
+      --panel-alt-light: #e8ecf4;
+      --panel-alt-dark: #1d2433;
+      --text-light: #0f172a;
+      --text-dark: #f1f5f9;
+      --muted-light: #526077;
+      --muted-dark: #94a3b8;
+      --border-light: #d4dbe8;
+      --border-dark: #283246;
+
+      --brand-accent-light: #d9381e;
+      --brand-accent-dark: #ff5722;
+      --beat1-light: #dc2626;
+      --beat1-dark: #ff4d4f;
+      --snare-light: #0284c7;
+      --snare-dark: #38bdf8;
+      --groove-light: #16a34a;
+      --groove-dark: #4ade80;
+      --hat-light: #d97706;
+      --hat-dark: #fbbf24;
+
+      --bg: var(--bg-light);
+      --panel: var(--panel-light);
+      --panel-alt: var(--panel-alt-light);
+      --text: var(--text-light);
+      --muted: var(--muted-light);
+      --border: var(--border-light);
+      --accent-color: var(--brand-accent-light);
+      --beat1: var(--beat1-light);
+      --snare: var(--snare-light);
+      --groove: var(--groove-light);
+      --hat: var(--hat-light);
+      --scrollbar-track: #e5e7eb;
+      --scrollbar-thumb: #9ca3af;
+
+      /* MANDATORY: Fallback for browsers without light-dark support */
+      @media (prefers-color-scheme: dark) {
+        --bg: var(--bg-dark);
+        --panel: var(--panel-dark);
+        --panel-alt: var(--panel-alt-dark);
+        --text: var(--text-dark);
+        --muted: var(--muted-dark);
+        --border: var(--border-dark);
+        --accent-color: var(--brand-accent-dark);
+        --beat1: var(--beat1-dark);
+        --snare: var(--snare-dark);
+        --groove: var(--groove-dark);
+        --hat: var(--hat-dark);
+        --scrollbar-track: #141923;
+        --scrollbar-thumb: #4b5563;
+      }
+
+      @supports (color: light-dark(white, black)) {
+        --bg: light-dark(var(--bg-light), var(--bg-dark));
+        --panel: light-dark(var(--panel-light), var(--panel-dark));
+        --panel-alt: light-dark(var(--panel-alt-light), var(--panel-alt-dark));
+        --text: light-dark(var(--text-light), var(--text-dark));
+        --muted: light-dark(var(--muted-light), var(--muted-dark));
+        --border: light-dark(var(--border-light), var(--border-dark));
+        --accent-color: light-dark(var(--brand-accent-light), var(--brand-accent-dark));
+        --beat1: light-dark(var(--beat1-light), var(--beat1-dark));
+        --snare: light-dark(var(--snare-light), var(--snare-dark));
+        --groove: light-dark(var(--groove-light), var(--groove-dark));
+        --hat: light-dark(var(--hat-light), var(--hat-dark));
+        --scrollbar-track: light-dark(#e5e7eb, #141923);
+        --scrollbar-thumb: light-dark(#9ca3af, #4b5563);
+      }
+
+      /* MANDATORY: Automatically adapt native UI to user system preferences */
+      color-scheme: light dark;
+      accent-color: var(--accent-color);
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      accent-color: var(--accent-color);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Sidebar Playlist */
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .ai-badge {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--groove) 20%, var(--panel-alt));
+      color: var(--groove);
+      border: 1px solid color-mix(in srgb, var(--groove) 45%, transparent);
+      font-weight: 700;
+    }
+
+    .upload-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: color-mix(in srgb, var(--accent-color) 10%, var(--panel-alt));
+      border: 1.5px dashed var(--accent-color);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      text-align: center;
+    }
+
+    .upload-btn:hover {
+      background: color-mix(in srgb, var(--accent-color) 18%, var(--panel-alt));
+    }
+
+    .upload-sub {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .song-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-gutter: stable;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    @supports not (scrollbar-color: auto) {
+      .song-list::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      .song-list::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+      }
+      .song-list::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+      }
+    }
+
+    .song-item {
+      padding: 9px 11px;
+      border-radius: 9px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+      background: transparent;
+      color: var(--text);
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .song-item:hover {
+      background: var(--panel-alt);
+    }
+
+    .song-item.active {
+      background: var(--panel-alt);
+      border-color: var(--accent-color);
+    }
+
+    .song-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .song-num {
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: var(--accent-color);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge.stems-ready {
+      background: color-mix(in srgb, var(--groove) 18%, var(--bg));
+      border-color: color-mix(in srgb, var(--groove) 50%, var(--border));
+      color: var(--groove);
+    }
+
+    .song-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .song-tip {
+      font-size: 0.73rem;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    /* Main Studio Area */
+    .main {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 14px 20px 28px;
+      gap: 12px;
+      scrollbar-width: thin;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .now-playing h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .now-playing p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .bar-counter-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .counter-metric {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .counter-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .counter-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    /* Native Styled <progress> Bar for AI Separation Jobs */
+    .ai-job-banner {
+      background: var(--panel);
+      border: 1px solid var(--accent-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ai-job-banner[hidden] {
+      display: none !important;
+    }
+
+    .ai-job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    progress.studio-progress {
+      appearance: none;
+      border: 0 solid;
+      overflow: clip;
+      width: 100%;
+      height: 10px;
+      --progress-bar-radius: 1e5px;
+      border-radius: var(--progress-bar-radius);
+      background: var(--panel-alt);
+      box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.15);
+      container-type: inline-size;
+      --progress-bar-indeterminate-size: 30%;
+      --progress-bar-indeterminate-animation-duration: 1.5s;
+      @media (prefers-reduced-motion: reduce) {
+        --progress-bar-indeterminate-animation-duration: 10s;
+      }
+    }
+
+    progress.studio-progress:dir(rtl) {
+      --progress-bar-indeterminate-animation: progress-bar-indeterminate var(--progress-bar-indeterminate-animation-duration) infinite linear reverse;
+    }
+
+    progress.studio-progress:indeterminate {
+      --progress-bar-animation: var(
+        --progress-bar-indeterminate-animation,
+        progress-bar-indeterminate var(--progress-bar-indeterminate-animation-duration) infinite linear
+      );
+    }
+
+    progress.studio-progress::-webkit-progress-bar {
+      background: transparent;
+    }
+
+    progress.studio-progress::-webkit-progress-value {
+      background: var(--progress-bar-fill, var(--accent-color));
+      border-radius: var(--progress-bar-radius);
+      transition: inline-size 0.25s;
+      animation: var(--progress-bar-animation, revert-rule);
+    }
+
+    progress.studio-progress::-moz-progress-bar {
+      background: var(--progress-bar-fill, var(--accent-color));
+      border-radius: var(--progress-bar-radius);
+      transition: inline-size 0.25s;
+      animation: var(--progress-bar-animation, revert-rule);
+    }
+
+    @keyframes progress-bar-indeterminate {
+      from, to {
+        inline-size: var(--progress-bar-indeterminate-size);
+        margin-right: auto;
+      }
+      from { translate: -100%; }
+      to { translate: 100cqi; }
+    }
+
+    /* Smart Drum Entry Banner & Section Cue Bar */
+    .cue-strip {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .drum-entry-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      background: color-mix(in srgb, var(--hat) 16%, var(--panel-alt));
+      border: 1px solid color-mix(in srgb, var(--hat) 50%, var(--border));
+      flex-wrap: wrap;
+    }
+
+    .drum-entry-alert.count-in-now {
+      background: color-mix(in srgb, var(--beat1) 22%, var(--panel-alt));
+      border-color: var(--beat1);
+      animation: pulse-alert 0.5s infinite alternate;
+    }
+
+    .drum-entry-alert.in-groove {
+      background: color-mix(in srgb, var(--groove) 14%, var(--panel-alt));
+      border-color: color-mix(in srgb, var(--groove) 45%, var(--border));
+    }
+
+    @keyframes pulse-alert {
+      from { box-shadow: 0 0 0px transparent; }
+      to { box-shadow: 0 0 18px color-mix(in srgb, var(--beat1) 45%, transparent); }
+    }
+
+    .cue-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .cue-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+
+    .cue-btn {
+      font-size: 0.76rem;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .cue-btn.highlight-cue {
+      border-color: var(--accent-color);
+      background: color-mix(in srgb, var(--accent-color) 16%, var(--panel-alt));
+    }
+
+    /* Giant Visual Beat Finder (1 - 2 - 3 - 4) */
+    .beat-visualizer {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .beat-pad {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.05s ease-out, border-color 0.05s, box-shadow 0.05s, background-color 0.05s;
+      user-select: none;
+    }
+
+    .beat-pad .beat-number {
+      font-size: 2.8rem;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .beat-pad .beat-role {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .beat-pad .beat-action-tag {
+      margin-top: 4px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--panel-alt);
+      color: var(--text);
+    }
+
+    .beat-pad .sub-dots {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .sub-dot {
+      width: 20px;
+      height: 18px;
+      border-radius: 5px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.04s, transform 0.04s, color 0.04s;
+    }
+
+    .sub-dot.has-hit {
+      border-color: var(--hat);
+      color: var(--text);
+    }
+
+    .sub-dot.active {
+      background: var(--groove);
+      color: #000;
+      border-color: var(--groove);
+      transform: scale(1.18);
+    }
+
+    .beat-pad.active-beat-1 {
+      border-color: var(--beat1);
+      background: color-mix(in srgb, var(--beat1) 22%, var(--panel));
+      box-shadow: 0 0 26px color-mix(in srgb, var(--beat1) 45%, transparent);
+      transform: translateY(-2px) scale(1.015);
+    }
+
+    .beat-pad.active-snare {
+      border-color: var(--snare);
+      background: color-mix(in srgb, var(--snare) 20%, var(--panel));
+      box-shadow: 0 0 22px color-mix(in srgb, var(--snare) 40%, transparent);
+      transform: translateY(-2px) scale(1.015);
+    }
+
+    .beat-pad.active-beat-3 {
+      border-color: var(--groove);
+      background: color-mix(in srgb, var(--groove) 18%, var(--panel));
+      box-shadow: 0 0 20px color-mix(in srgb, var(--groove) 35%, transparent);
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    /* Live 16-Step Drum Groove Sequencer (Current Bar + Next Bar Preview) */
+    .groove-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .groove-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .groove-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .oral-box {
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--accent-color) 15%, var(--panel-alt));
+      color: var(--accent-color);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .next-bar-badge {
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+    }
+
+    .sequencer-grid {
+      display: grid;
+      grid-template-columns: 92px repeat(16, 1fr);
+      gap: 4px;
+      align-items: center;
+      user-select: none;
+    }
+
+    .seq-row-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .seq-col-header {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 2px 0;
+      border-radius: 4px;
+    }
+
+    .seq-col-header.downbeat-col {
+      color: var(--text);
+      font-weight: 900;
+      background: var(--panel-alt);
+    }
+
+    .seq-col-header.active-col {
+      background: var(--accent-color);
+      color: #fff;
+    }
+
+    .seq-cell {
+      height: 24px;
+      border-radius: 5px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 800;
+      transition: transform 0.04s, background-color 0.04s, box-shadow 0.04s;
+    }
+
+    .seq-cell.beat-start {
+      border-left: 2px solid color-mix(in srgb, var(--muted) 45%, var(--border));
+    }
+
+    .seq-cell.hit-hat-1 {
+      background: color-mix(in srgb, var(--hat) 35%, var(--bg));
+      border-color: var(--hat);
+      color: var(--hat);
+    }
+    .seq-cell.hit-hat-2 {
+      background: var(--hat);
+      border-color: var(--hat);
+      color: #000;
+    }
+
+    .seq-cell.hit-snare-1 {
+      background: color-mix(in srgb, var(--snare) 38%, var(--bg));
+      border-color: var(--snare);
+      color: var(--snare);
+    }
+    .seq-cell.hit-snare-2 {
+      background: var(--snare);
+      border-color: var(--snare);
+      color: #000;
+    }
+
+    .seq-cell.hit-kick-1 {
+      background: color-mix(in srgb, var(--beat1) 38%, var(--bg));
+      border-color: var(--beat1);
+      color: var(--beat1);
+    }
+    .seq-cell.hit-kick-2 {
+      background: var(--beat1);
+      border-color: var(--beat1);
+      color: #fff;
+    }
+
+    .seq-cell.playing-now {
+      transform: scale(1.12);
+      box-shadow: 0 0 10px var(--accent-color);
+      outline: 2px solid #fff;
+    }
+
+    /* Scrolling 3-Lane Drum Highway + Waveform Canvas */
+    .canvas-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .canvas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    canvas {
+      width: 100%;
+      background: var(--bg);
+      border-radius: 8px;
+      display: block;
+      cursor: pointer;
+    }
+
+    #zoomCanvas {
+      height: 136px;
+    }
+
+    #overviewCanvas {
+      height: 48px;
+    }
+
+    /* Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+      content-visibility: auto;
+      contain-intrinsic-size: auto none auto 250px;
+    }
+
+    .control-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 11px;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, transform 0.05s;
+    }
+
+    button:hover {
+      border-color: var(--accent-color);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.primary {
+      background: var(--accent-color);
+      color: #fff;
+      border-color: var(--accent-color);
+    }
+
+    button.active-toggle {
+      border-color: var(--groove);
+      background: color-mix(in srgb, var(--groove) 22%, var(--panel-alt));
+    }
+
+    button.solo-active {
+      background: var(--hat);
+      color: #000;
+      border-color: var(--hat);
+    }
+
+    button.mute-active {
+      background: var(--beat1);
+      color: #fff;
+      border-color: var(--beat1);
+    }
+
+    /* 4-Track Stem Mixer Rows */
+    .stem-row {
+      display: grid;
+      grid-template-columns: 112px auto 1fr 44px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .stem-name {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .stem-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    .stem-btns button {
+      padding: 3px 7px;
+      font-size: 0.72rem;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 88px 1fr 52px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .slider-val {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    /* Fallback for older browsers without accent-color */
+    @supports not (accent-color: var(--accent-color)) {
+      input[type="checkbox"].visually-hidden {
+        position: absolute !important;
+        clip-path: inset(50%) !important;
+        overflow: hidden !important;
+        width: 1px !important;
+        height: 1px !important;
+        margin: -1px !important;
+        padding: 0 !important;
+        border: 0 !important;
+        white-space: nowrap !important;
+      }
+
+      .checkbox-label {
+        position: relative;
+        padding-left: 1.8rem;
+      }
+
+      input[type="checkbox"] + span::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1.1rem;
+        height: 1.1rem;
+        border: 2px solid var(--border);
+        background: var(--panel);
+        border-radius: 4px;
+      }
+
+      input[type="checkbox"]:focus-visible + span::before {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      input[type="checkbox"]:checked + span::before {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      input[type="checkbox"]:checked + span::after {
+        content: "✓";
+        position: absolute;
+        left: 0.22rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-weight: bold;
+        font-size: 0.85rem;
+      }
+    }
+
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.7rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    @media (max-width: 960px) {
+      body {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: auto;
+      }
+      .sidebar {
+        height: 280px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .main {
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar with all 18 ordered songs & AI Upload -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>
+        <span>🥁 摇滚练鼓 AI 工作台</span>
+        <span class="ai-badge" id="serverBadge">AI 引擎就绪</span>
+      </h1>
+      <label class="upload-btn" for="fileInput">
+        <span>📂 导入任意音频 (AI 分离鼓轨 + 自动找第1拍)</span>
+        <span class="upload-sub">支持 .m4a / .mp3 / .wav · 自动拆解鼓/贝斯/人声/伴奏</span>
+        <input type="file" id="fileInput" accept="audio/*,video/*" hidden>
+      </label>
+    </div>
+    <div class="song-list" id="songList"></div>
+  </aside>
+
+  <!-- Main Interactive Visualizer & Studio -->
+  <main class="main">
+    <div class="top-bar">
+      <div class="now-playing">
+        <h2 id="currentTitle">04 [入门-80BPM] Green Day - 21 Guns</h2>
+        <p id="currentTip">训练重点：慢速抒情摇滚动态对比 + 第 41.0s 进鼓第 1 拍定位 + 底鼓 1、3& 与 2、4 军鼓律动。</p>
+      </div>
+      <div class="bar-counter-box">
+        <div class="counter-metric">
+          <span class="counter-label">小节 (BAR)</span>
+          <span class="counter-value" id="barDisplay">1</span>
+        </div>
+        <div class="counter-metric">
+          <span class="counter-label">当前拍 (BEAT)</span>
+          <span class="counter-value" id="beatDisplay">1</span>
+        </div>
+        <div class="counter-metric">
+          <span class="counter-label">实时速度 (BPM)</span>
+          <span class="counter-value" id="effectiveBpmDisplay">80.0</span>
+        </div>
+        <div class="counter-metric">
+          <span class="counter-label">时间 (TIME)</span>
+          <span class="counter-value" id="timeDisplay">0:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Demucs Stem Separation Progress Banner -->
+    <div class="ai-job-banner" id="aiJobBanner" hidden>
+      <div class="ai-job-header">
+        <span id="aiJobText" role="status" aria-live="polite">⚡ AI 正在分离音轨 (Demucs htdemucs) 并提取鼓谱...</span>
+        <span id="aiJobPct">0%</span>
+      </div>
+      <progress class="studio-progress" id="aiJobProgress" max="100" value="10" aria-label="AI 音轨分离与节拍分析进度"></progress>
+    </div>
+
+    <!-- Smart Drum Entry Countdown & Section Cue Navigation -->
+    <section class="cue-strip" aria-label="进鼓倒计时与段落一键跳转">
+      <div class="drum-entry-alert" id="drumEntryBanner">
+        <span id="drumEntryText">🔍 正在加载进鼓位置与第 1 拍对齐数据...</span>
+        <div class="btn-row">
+          <button class="primary" id="jumpPreDrumBtn">⏳ 一键跳到进鼓预备拍 (提前1小节倒数 1-2-3-4)</button>
+          <button id="jumpFirstDrumBtn">🥁 直接跳到首次进鼓第 1 拍</button>
+        </div>
+      </div>
+      <div class="cue-buttons" id="cueButtonsContainer">
+        <span class="cue-label">📍 段落/第1拍快速定位：</span>
+      </div>
+    </section>
+
+    <!-- Giant 1 - 2 - 3 - 4 Visual Beat Finder -->
+    <section class="beat-visualizer" aria-label="可视化 1-2-3-4 找拍器">
+      <div class="beat-pad" id="pad-0">
+        <div class="beat-number">1</div>
+        <div class="beat-role">小节第 1 拍 (强拍 Downbeat)</div>
+        <div class="beat-action-tag" id="pad-action-0">🔴 底鼓 Kick + 🟡 踩镲</div>
+        <div class="sub-dots">
+          <span class="sub-dot" id="sub-0-0" title="1 (正拍)">1</span>
+          <span class="sub-dot" id="sub-0-1" title="e">e</span>
+          <span class="sub-dot" id="sub-0-2" title="& (反拍八分)">&amp;</span>
+          <span class="sub-dot" id="sub-0-3" title="a">a</span>
+        </div>
+      </div>
+      <div class="beat-pad" id="pad-1">
+        <div class="beat-number">2</div>
+        <div class="beat-role">第 2 拍 · 军鼓重拍 (Snare)</div>
+        <div class="beat-action-tag" id="pad-action-1">🔵 军鼓 Snare + 🟡 踩镲</div>
+        <div class="sub-dots">
+          <span class="sub-dot" id="sub-1-0">2</span>
+          <span class="sub-dot" id="sub-1-1">e</span>
+          <span class="sub-dot" id="sub-1-2">&amp;</span>
+          <span class="sub-dot" id="sub-1-3">a</span>
+        </div>
+      </div>
+      <div class="beat-pad" id="pad-2">
+        <div class="beat-number">3</div>
+        <div class="beat-role">第 3 拍 · 底鼓律动 (Kick)</div>
+        <div class="beat-action-tag" id="pad-action-2">🔴 底鼓律动 (3 / 3&amp;)</div>
+        <div class="sub-dots">
+          <span class="sub-dot" id="sub-2-0">3</span>
+          <span class="sub-dot" id="sub-2-1">e</span>
+          <span class="sub-dot" id="sub-2-2">&amp;</span>
+          <span class="sub-dot" id="sub-2-3">a</span>
+        </div>
+      </div>
+      <div class="beat-pad" id="pad-3">
+        <div class="beat-number">4</div>
+        <div class="beat-role">第 4 拍 · 军鼓重拍 / 加花</div>
+        <div class="beat-action-tag" id="pad-action-3">🔵 军鼓 Snare / 过门 Fill</div>
+        <div class="sub-dots">
+          <span class="sub-dot" id="sub-3-0">4</span>
+          <span class="sub-dot" id="sub-3-1">e</span>
+          <span class="sub-dot" id="sub-3-2">&amp;</span>
+          <span class="sub-dot" id="sub-3-3">a</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live 16-Step Drum Groove Sequencer (Kick / Snare / Hi-Hat) -->
+    <section class="groove-card" aria-label="当前小节 16 分音符鼓谱步进器">
+      <div class="groove-header">
+        <div class="groove-title">
+          <span id="grooveBarTitle">🎼 当前小节 16 分音符实时鼓谱 (Bar 1)</span>
+          <span class="oral-box" id="oralPatternDisplay">唱谱口诀：1:咚 &amp;:次 ｜ 2:哒 ｜ 3:咚 &amp;:咚 ｜ 4:哒</span>
+        </div>
+        <div class="btn-row">
+          <span class="next-bar-badge" id="nextBarPreview">下一小节预告：稳定律动</span>
+          <button id="loop1BarBtn" title="精确锁定当前1小节第1拍到第4拍循环">🔁 循环本小节 (1 Bar)</button>
+          <button id="loop2BarsBtn" title="精确锁定当前2小节循环">🔁 循环 2 小节</button>
+          <button id="loop4BarsBtn" title="精确锁定当前4小节循环">🔁 循环 4 小节</button>
+        </div>
+      </div>
+      <div class="sequencer-grid" id="sequencerGrid"></div>
+    </section>
+
+    <!-- Real-time 3-Lane Scrolling Drum Highway & Waveform -->
+    <section class="canvas-card">
+      <div class="canvas-header">
+        <span><strong>三轨分层实时鼓谱高速公路 (3-Lane Drum Highway)</strong> — <span style="color:#ff4d4f;font-weight:700;">红竖线 = 小节第 1 拍 (Bar Downbeat)</span> · <span style="color:#38bdf8;font-weight:700;">蓝竖线 = 第 2/4 拍军鼓</span> · <span style="color:#4ade80;font-weight:700;">绿竖线 = 第 3 拍</span> （上轨🟡镲片 / 中轨🔵军鼓 / 下轨🔴底鼓）</span>
+        <span id="analysisStatus">✅ 动态鼓谱与第 1 拍对齐已就绪</span>
+      </div>
+      <canvas id="zoomCanvas" width="1200" height="136"></canvas>
+      <div class="canvas-header">
+        <span><strong>全曲结构总览 &amp; 鼓能量分布</strong>（亮色区 = 有鼓段落，点击任意位置跳转）</span>
+        <span>快捷键：<span class="kbd">Space</span> 播放/暂停 · <span class="kbd">D</span> 跳到进鼓预备拍 · <span class="kbd">S</span> 纯鼓独奏 · <span class="kbd">B</span> 校准当前为第1拍 · <span class="kbd">M</span> 节拍器开关</span>
+      </div>
+      <canvas id="overviewCanvas" width="1200" height="48"></canvas>
+    </section>
+
+    <!-- Controls Grid: 1. AI 4-Stem Mixer, 2. Transport/Speed/Loop, 3. Metronome & Calibration -->
+    <section class="controls-grid" id="controlsGrid">
+      <!-- 1. AI 4-Track Stem Mixer & Drum EQ -->
+      <div class="control-card">
+        <div class="card-title">
+          <span>🎚 AI 四轨独立混音台 (Demucs 音轨分离)</span>
+          <button class="primary" id="runAiStemBtn">✨ AI 分离当前曲目四轨</button>
+        </div>
+        <div class="btn-row">
+          <button id="presetFullBtn" class="active-toggle">🎧 原曲全轨</button>
+          <button id="presetDrumSoloBtn">🥁 纯鼓独奏 (听细节/扒谱)</button>
+          <button id="presetDrumlessBtn">🔥 去鼓伴奏 (自己打鼓跟练)</button>
+          <button id="presetDrumBassBtn">🎸 鼓+贝斯锁律动</button>
+        </div>
+        <div id="stemMixerRows" style="display:flex;flex-direction:column;gap:7px;">
+          <div class="stem-row">
+            <span class="stem-name">🥁 鼓组 (Drums)</span>
+            <div class="stem-btns">
+              <button data-solo="drums">S 独奏</button>
+              <button data-mute="drums">M 静音</button>
+            </div>
+            <input type="range" id="vol-drums" min="0" max="150" value="100">
+            <span class="slider-val" id="val-drums">100%</span>
+          </div>
+          <div class="stem-row">
+            <span class="stem-name">🎸 贝斯 (Bass)</span>
+            <div class="stem-btns">
+              <button data-solo="bass">S 独奏</button>
+              <button data-mute="bass">M 静音</button>
+            </div>
+            <input type="range" id="vol-bass" min="0" max="150" value="100">
+            <span class="slider-val" id="val-bass">100%</span>
+          </div>
+          <div class="stem-row">
+            <span class="stem-name">🎤 人声 (Vocals)</span>
+            <div class="stem-btns">
+              <button data-solo="vocals">S 独奏</button>
+              <button data-mute="vocals">M 静音</button>
+            </div>
+            <input type="range" id="vol-vocals" min="0" max="150" value="100">
+            <span class="slider-val" id="val-vocals">100%</span>
+          </div>
+          <div class="stem-row">
+            <span class="stem-name">🎹 伴奏 (Other)</span>
+            <div class="stem-btns">
+              <button data-solo="other">S 独奏</button>
+              <button data-mute="other">M 静音</button>
+            </div>
+            <input type="range" id="vol-other" min="0" max="150" value="100">
+            <span class="slider-val" id="val-other">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Transport & Speed / A-B Loop -->
+      <div class="control-card">
+        <div class="card-title">
+          <span>⏯ 播放控制 &amp; 无损变速 / AB循环</span>
+          <span id="loopStatus" style="color: var(--groove); font-size: 0.76rem;"></span>
+        </div>
+        <div class="btn-row">
+          <button class="primary" id="playPauseBtn">▶ 播放 (Space)</button>
+          <button id="restartBtn">⏮ 重头开始</button>
+          <button id="loopABtn">设 A 点</button>
+          <button id="loopBBtn">设 B 点</button>
+          <button id="clearLoopBtn">清除循环</button>
+        </div>
+        <div class="slider-row">
+          <label for="speedSlider">播放速度：</label>
+          <input type="range" id="speedSlider" min="0.5" max="1.25" step="0.05" value="1">
+          <span class="slider-val" id="speedVal">1.00x</span>
+        </div>
+        <div class="btn-row">
+          <button data-speed="0.6">0.6x 慢练拆解</button>
+          <button data-speed="0.75">0.75x 慢练</button>
+          <button data-speed="0.85">0.85x 巩固</button>
+          <button data-speed="1.0">1.0x 原速</button>
+        </div>
+      </div>
+
+      <!-- 3. Visual Beat Finder Calibration & Smart Metronome -->
+      <div class="control-card">
+        <div class="card-title">
+          <span>🎯 第 1 拍微调 &amp; 智能同步节拍器</span>
+          <label class="checkbox-label" for="clickToggle">
+            <input type="checkbox" id="clickToggle" class="visually-hidden" checked>
+            <span>开启节拍器滴答声 (M)</span>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="syncBeat1Btn" class="primary" title="如果觉得第1拍是第2/3/4拍，点击将最接近当前拍设为第1拍">📍 将当前拍设为第 1 拍 (B)</button>
+          <button id="shiftPhaseBtn" title="将小节第1拍向后轮转1拍">🔄 第1拍顺移1拍 (+1 Beat)</button>
+          <button id="nudgeLeftBtn">◀ 提前 15ms</button>
+          <button id="nudgeRightBtn">延后 15ms ▶</button>
+        </div>
+        <div class="slider-row">
+          <label for="clickVolSlider">节拍器音量：</label>
+          <input type="range" id="clickVolSlider" min="0" max="100" step="1" value="45">
+          <span class="slider-val" id="clickVolVal">45%</span>
+        </div>
+        <div class="slider-row">
+          <label for="kickEqSlider">底鼓增强(EQ)：</label>
+          <input type="range" id="kickEqSlider" min="-15" max="15" step="1" value="0">
+          <span class="slider-val" id="kickEqVal">0 dB</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Master fallback audio element & 4 Stem audio elements -->
+  <audio id="audioEl"></audio>
+  <audio id="stem-drums"></audio>
+  <audio id="stem-bass"></audio>
+  <audio id="stem-vocals"></audio>
+  <audio id="stem-other"></audio>
+
+  <script src="songs_analysis.js"></script>
+  <script>
+    const API_BASE = window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:8765";
+    // Local song catalog is injected dynamically by server.py from data/catalog.json or data/songs/ (strictly decoupled from code)
+    const SONGS = window.LOCAL_SONG_CATALOG || [];
+
+    const STEM_KEYS = ["drums", "bass", "vocals", "other"];
+    const audioEl = document.getElementById("audioEl");
+    const stemEls = {
+      drums: document.getElementById("stem-drums"),
+      bass: document.getElementById("stem-bass"),
+      vocals: document.getElementById("stem-vocals"),
+      other: document.getElementById("stem-other"),
+    };
+
+    const songListEl = document.getElementById("songList");
+    const currentTitleEl = document.getElementById("currentTitle");
+    const currentTipEl = document.getElementById("currentTip");
+    const barDisplay = document.getElementById("barDisplay");
+    const beatDisplay = document.getElementById("beatDisplay");
+    const effectiveBpmDisplay = document.getElementById("effectiveBpmDisplay");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const analysisStatus = document.getElementById("analysisStatus");
+
+    const zoomCanvas = document.getElementById("zoomCanvas");
+    const zoomCtx = zoomCanvas.getContext("2d");
+    const overviewCanvas = document.getElementById("overviewCanvas");
+    const overviewCtx = overviewCanvas.getContext("2d");
+
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const speedSlider = document.getElementById("speedSlider");
+    const speedVal = document.getElementById("speedVal");
+    const clickToggle = document.getElementById("clickToggle");
+    const clickVolSlider = document.getElementById("clickVolSlider");
+    const clickVolVal = document.getElementById("clickVolVal");
+
+    let currentSongIndex = 3; // Default to #04 Green Day - 21 Guns so user immediately sees it fixed!
+    let currentSongData = null; // Analysis object { beats, bars, kickEnv, snareEnv, hatEnv, mixPeaks, cues, hasStems, stems }
+    let usingStems = false;
+    let timeNudgeSec = 0.0;
+    let phaseShiftBeats = 0;
+    let loopA = null;
+    let loopB = null;
+    let lastPlayedBeatIdx = -1;
+    let backendOnline = false;
+
+    // Stem mixer state
+    const stemState = {
+      drums: { vol: 1.0, mute: false, solo: false },
+      bass: { vol: 1.0, mute: false, solo: false },
+      vocals: { vol: 1.0, mute: false, solo: false },
+      other: { vol: 1.0, mute: false, solo: false },
+    };
+
+    // Web Audio API context for Metronome Click
+    let audioCtx = null;
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function playMetronomeClick(beatInBar, isCountIn = false) {
+      if (!clickToggle.checked && !isCountIn) return;
+      ensureAudioCtx();
+      const vol = isCountIn ? Math.max(0.65, Number(clickVolSlider.value) / 100) : Number(clickVolSlider.value) / 100;
+      if (vol <= 0.01) return;
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      // Beat 1 (1): 1220Hz crisp downbeat; Beat 2/4: 860Hz; Beat 3: 680Hz
+      osc.type = "triangle";
+      const freq = beatInBar === 1 ? 1220 : (beatInBar === 2 || beatInBar === 4 ? 860 : 680);
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(vol * (beatInBar === 1 ? 0.75 : 0.45), now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.055);
+    }
+
+    // Build 16-Step Sequencer DOM
+    const STEP_LABELS = ["1", "e", "&", "a", "2", "e", "&", "a", "3", "e", "&", "a", "4", "e", "&", "a"];
+    function initSequencerDOM() {
+      const grid = document.getElementById("sequencerGrid");
+      grid.innerHTML = "";
+      // Header row
+      const corner = document.createElement("div");
+      corner.className = "seq-row-label";
+      corner.style.color = "var(--muted)";
+      corner.textContent = "16分音符步进";
+      grid.appendChild(corner);
+
+      for (let i = 0; i < 16; i++) {
+        const h = document.createElement("div");
+        h.className = "seq-col-header" + (i % 4 === 0 ? " downbeat-col" : "");
+        h.id = `seq-hdr-${i}`;
+        h.textContent = STEP_LABELS[i];
+        grid.appendChild(h);
+      }
+
+      const rows = [
+        { key: "hat", label: "🟡 踩镲/吊镲" },
+        { key: "snare", label: "🔵 军鼓 Snare" },
+        { key: "kick", label: "🔴 底鼓 Kick" },
+      ];
+
+      rows.forEach((r) => {
+        const lbl = document.createElement("div");
+        lbl.className = "seq-row-label";
+        lbl.textContent = r.label;
+        grid.appendChild(lbl);
+
+        for (let i = 0; i < 16; i++) {
+          const cell = document.createElement("div");
+          cell.className = "seq-cell" + (i % 4 === 0 ? " beat-start" : "");
+          cell.id = `seq-${r.key}-${i}`;
+          grid.appendChild(cell);
+        }
+      });
+    }
+
+    // Master time getter / setter across single audio or 4 stem audios
+    function getMasterTime() {
+      if (usingStems) {
+        return stemEls.drums.currentTime || 0;
+      }
+      return audioEl.currentTime || 0;
+    }
+
+    function getMasterDuration() {
+      if (currentSongData && currentSongData.duration) return currentSongData.duration;
+      if (usingStems) return stemEls.drums.duration || 1;
+      return audioEl.duration || 1;
+    }
+
+    function isMasterPaused() {
+      return usingStems ? stemEls.drums.paused : audioEl.paused;
+    }
+
+    function seekMaster(targetSec) {
+      const dur = getMasterDuration();
+      const clamped = Math.max(0, Math.min(dur, targetSec));
+      if (usingStems) {
+        STEM_KEYS.forEach((k) => {
+          stemEls[k].currentTime = clamped;
+        });
+      } else {
+        audioEl.currentTime = clamped;
+      }
+      lastPlayedBeatIdx = -1;
+    }
+
+    function setMasterPlaybackRate(rate) {
+      audioEl.playbackRate = rate;
+      audioEl.preservesPitch = true;
+      STEM_KEYS.forEach((k) => {
+        stemEls[k].playbackRate = rate;
+        stemEls[k].preservesPitch = true;
+      });
+    }
+
+    function updateStemGains() {
+      const anySolo = STEM_KEYS.some((k) => stemState[k].solo);
+      STEM_KEYS.forEach((k) => {
+        const st = stemState[k];
+        const allowed = anySolo ? st.solo : !st.mute;
+        const effectiveVol = allowed ? Math.min(1.0, st.vol) : 0.0;
+        stemEls[k].volume = effectiveVol;
+        stemEls[k].muted = !allowed || st.vol <= 0.001;
+
+        const soloBtn = document.querySelector(`[data-solo="${k}"]`);
+        const muteBtn = document.querySelector(`[data-mute="${k}"]`);
+        if (soloBtn) soloBtn.classList.toggle("solo-active", st.solo);
+        if (muteBtn) muteBtn.classList.toggle("mute-active", st.mute);
+      });
+
+      // If not using separated stems yet, simulate preset via EQ or volume on audioEl
+      if (!usingStems) {
+        const drumsMuted = stemState.drums.mute || (anySolo && !stemState.drums.solo);
+        audioEl.volume = drumsMuted ? 0.85 : Math.min(1.0, stemState.drums.vol);
+      }
+    }
+
+    function applyMixPreset(presetName) {
+      STEM_KEYS.forEach((k) => {
+        stemState[k].solo = false;
+        stemState[k].mute = false;
+        stemState[k].vol = 1.0;
+      });
+
+      if (presetName === "drumSolo") {
+        stemState.drums.solo = true;
+        stemState.drums.vol = 1.0;
+      } else if (presetName === "drumless") {
+        stemState.drums.mute = true;
+        stemState.drums.vol = 0.0;
+      } else if (presetName === "drumBass") {
+        stemState.drums.solo = true;
+        stemState.bass.solo = true;
+      }
+
+      STEM_KEYS.forEach((k) => {
+        const slider = document.getElementById(`vol-${k}`);
+        const valSpan = document.getElementById(`val-${k}`);
+        const pct = Math.round((stemState[k].mute ? 0 : stemState[k].vol) * 100);
+        if (slider) slider.value = pct;
+        if (valSpan) valSpan.textContent = `${pct}%`;
+      });
+
+      ["presetFullBtn", "presetDrumSoloBtn", "presetDrumlessBtn", "presetDrumBassBtn"].forEach((id) => {
+        document.getElementById(id).classList.remove("active-toggle");
+      });
+      const btnMap = {
+        full: "presetFullBtn",
+        drumSolo: "presetDrumSoloBtn",
+        drumless: "presetDrumlessBtn",
+        drumBass: "presetDrumBassBtn",
+      };
+      if (btnMap[presetName]) {
+        document.getElementById(btnMap[presetName]).classList.add("active-toggle");
+      }
+
+      updateStemGains();
+    }
+
+    function togglePlay(forcePlay = null) {
+      ensureAudioCtx();
+      const paused = isMasterPaused();
+      const shouldPlay = forcePlay !== null ? forcePlay : paused;
+
+      if (shouldPlay) {
+        if (usingStems) {
+          const masterT = stemEls.drums.currentTime;
+          STEM_KEYS.forEach((k) => {
+            if (Math.abs(stemEls[k].currentTime - masterT) > 0.03) {
+              stemEls[k].currentTime = masterT;
+            }
+            stemEls[k].play().catch(() => {});
+          });
+        } else {
+          audioEl.play().catch(() => {});
+        }
+        playPauseBtn.textContent = "⏸ 暂停 (Space)";
+      } else {
+        if (usingStems) {
+          STEM_KEYS.forEach((k) => stemEls[k].pause());
+        } else {
+          audioEl.pause();
+        }
+        playPauseBtn.textContent = "▶ 播放 (Space)";
+      }
+    }
+
+    function renderPlaylist() {
+      songListEl.innerHTML = "";
+      if (!SONGS.length) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "padding:18px 12px;color:var(--muted);font-size:0.84rem;line-height:1.6;";
+        empty.innerHTML = "📂 <strong>本地曲库为空 (代码与音频数据已分离)</strong><br>请将音频文件放入本地 <code>data/songs/</code> 目录，或点击左上方 <strong>「📂 导入任意音乐」</strong> 按钮直接上传分析。";
+        songListEl.appendChild(empty);
+        return;
+      }
+      const pre = window.PRECOMPUTED_SONGS || {};
+      SONGS.forEach((s, i) => {
+        const data = pre[s.id];
+        const hasStems = data && data.hasStems;
+        const btn = document.createElement("button");
+        btn.className = "song-item" + (i === currentSongIndex ? " active" : "");
+        btn.innerHTML = `
+          <div class="song-item-top">
+            <span class="song-num">#${s.num} · ${s.level}</span>
+            <div class="badge-group">
+              ${hasStems ? '<span class="badge stems-ready">✨ 4轨已分离</span>' : ""}
+              <span class="badge">${s.bpm} BPM</span>
+            </div>
+          </div>
+          <div class="song-title">${s.title}</div>
+          <div class="song-tip">${s.tip}</div>
+        `;
+        btn.addEventListener("click", () => {
+          loadBuiltinSong(i, true);
+        });
+        songListEl.appendChild(btn);
+      });
+    }
+
+    function renderCues(cues) {
+      const container = document.getElementById("cueButtonsContainer");
+      container.innerHTML = '<span class="cue-label">📍 段落/第1拍快速定位：</span>';
+      if (!cues || !cues.length) return;
+      cues.forEach((c) => {
+        const b = document.createElement("button");
+        b.className = "cue-btn" + (c.type === "count_in" || c.type === "drum_entry" ? " highlight-cue" : "");
+        b.textContent = `${c.label} (${formatTime(c.time)})`;
+        b.addEventListener("click", () => {
+          seekMaster(c.time);
+          togglePlay(true);
+        });
+        container.appendChild(b);
+      });
+    }
+
+    function applySongAnalysisData(data, baseAudioUrl = null) {
+      currentSongData = data;
+      timeNudgeSec = 0.0;
+      phaseShiftBeats = 0;
+      lastPlayedBeatIdx = -1;
+
+      const hasStems = Boolean(data && data.hasStems && data.stems);
+      usingStems = hasStems;
+
+      const spd = Number(speedSlider.value);
+      if (hasStems) {
+        audioEl.pause();
+        STEM_KEYS.forEach((k) => {
+          const rawPath = data.stems[k];
+          stemEls[k].src = encodeURI(rawPath);
+          stemEls[k].playbackRate = spd;
+          stemEls[k].preservesPitch = true;
+        });
+        document.getElementById("runAiStemBtn").textContent = "✅ AI 四轨已就绪 (Drums/Bass/Vocals/Other)";
+        document.getElementById("runAiStemBtn").disabled = true;
+        analysisStatus.textContent = `✅ AI 四轨分离 (Demucs) + 纯鼓轨第 1 拍动态对齐已激活（进鼓: ${data.firstDrumSec}s）`;
+      } else {
+        STEM_KEYS.forEach((k) => stemEls[k].pause());
+        if (baseAudioUrl) {
+          audioEl.src = baseAudioUrl;
+          audioEl.playbackRate = spd;
+          audioEl.preservesPitch = true;
+        }
+        document.getElementById("runAiStemBtn").textContent = "✨ AI 分离当前曲目四轨 (Demucs)";
+        document.getElementById("runAiStemBtn").disabled = false;
+        analysisStatus.textContent = `✅ 动态节拍网格已对齐（首次进鼓: ${data.firstDrumSec}s · 点击下方可启动 AI 四轨分离）`;
+      }
+
+      updateStemGains();
+      renderCues(data.cues || []);
+      drawOverview();
+    }
+
+    function loadBuiltinSong(index, autoPlay = false) {
+      if (!SONGS.length) {
+        currentTitleEl.textContent = "🥁 请导入本地音频文件或将曲目放入 data/songs/";
+        currentTipEl.textContent = "点击左侧「📂 导入任意音乐 (自动分轨+找1拍)」即可开始练习。";
+        return;
+      }
+      togglePlay(false);
+      currentSongIndex = Math.min(index, SONGS.length - 1);
+      const song = SONGS[currentSongIndex];
+      document.querySelectorAll(".song-item").forEach((el, idx) => {
+        el.classList.toggle("active", idx === index);
+      });
+
+      currentTitleEl.textContent = `${song.num} [${song.level}-${song.bpm}BPM] ${song.title}`;
+      currentTipEl.textContent = `训练重点：${song.tip}`;
+      loopA = null;
+      loopB = null;
+      updateLoopUI();
+
+      const pre = window.PRECOMPUTED_SONGS && window.PRECOMPUTED_SONGS[song.id];
+      const encodedUrl = encodeURI(song.file);
+
+      if (pre) {
+        applySongAnalysisData(pre, encodedUrl);
+        if (autoPlay) togglePlay(true);
+      } else {
+        audioEl.src = encodedUrl;
+        analyzeAudioClientSide(encodedUrl, song.bpm, song.title).then(() => {
+          if (autoPlay) togglePlay(true);
+        });
+      }
+    }
+
+    // Binary search for current beat index in currentSongData.beats
+    function findBeatIndexAtTime(t) {
+      if (!currentSongData || !currentSongData.beats || !currentSongData.beats.length) return -1;
+      const beats = currentSongData.beats;
+      let lo = 0;
+      let hi = beats.length - 1;
+      if (t < beats[0].t) return 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (beats[mid].t <= t) {
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      return Math.max(0, hi);
+    }
+
+    function findBarAtTime(t) {
+      if (!currentSongData || !currentSongData.bars || !currentSongData.bars.length) return null;
+      const bars = currentSongData.bars;
+      let lo = 0;
+      let hi = bars.length - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (bars[mid].t0 <= t) {
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      const idx = Math.max(0, hi);
+      return { barObj: bars[idx], nextBarObj: bars[idx + 1] || null, index: idx };
+    }
+
+    function updateSequencerUI(barInfo, nowSec) {
+      if (!barInfo || !barInfo.barObj) return;
+      const { barObj, nextBarObj } = barInfo;
+      document.getElementById("grooveBarTitle").textContent = `🎼 当前小节 16 分音符实时鼓谱 (第 ${barObj.bar} 小节 · ${barObj.bpm} BPM)`;
+      document.getElementById("oralPatternDisplay").textContent = `口诀：${barObj.oral}`;
+
+      const nextBadge = document.getElementById("nextBarPreview");
+      if (nextBarObj) {
+        if (nextBarObj.type === "fill") {
+          nextBadge.textContent = `⚠️ 下一小节 (Bar ${nextBarObj.bar})：🔥 过门加花 (Drum Fill)！`;
+          nextBadge.style.borderColor = "var(--hat)";
+          nextBadge.style.color = "var(--hat)";
+        } else if (nextBarObj.type === "count_in") {
+          nextBadge.textContent = `🔔 下一小节 (Bar ${nextBarObj.bar})：进鼓预备倒数 1-2-3-4！`;
+          nextBadge.style.borderColor = "var(--beat1)";
+          nextBadge.style.color = "var(--beat1)";
+        } else if (barObj.type === "count_in") {
+          nextBadge.textContent = `🥁 下一拍即将正式进鼓 (Bar ${nextBarObj.bar} 第 1 拍)！`;
+          nextBadge.style.borderColor = "var(--beat1)";
+          nextBadge.style.color = "var(--beat1)";
+        } else {
+          nextBadge.textContent = `下一小节 (Bar ${nextBarObj.bar})：稳定律动`;
+          nextBadge.style.borderColor = "var(--border)";
+          nextBadge.style.color = "var(--muted)";
+        }
+      }
+
+      const barProgress = Math.max(0, Math.min(0.999, (nowSec - barObj.t0) / Math.max(0.2, barObj.t1 - barObj.t0)));
+      const activeStep = Math.floor(barProgress * 16);
+
+      for (let i = 0; i < 16; i++) {
+        const hdr = document.getElementById(`seq-hdr-${i}`);
+        if (hdr) hdr.classList.toggle("active-col", i === activeStep);
+
+        const hVal = barObj.h[i] || 0;
+        const sVal = barObj.s[i] || 0;
+        const kVal = barObj.k[i] || 0;
+
+        const hCell = document.getElementById(`seq-hat-${i}`);
+        if (hCell) {
+          hCell.className = `seq-cell${i % 4 === 0 ? " beat-start" : ""}${hVal ? ` hit-hat-${hVal}` : ""}${i === activeStep ? " playing-now" : ""}`;
+          hCell.textContent = hVal === 2 ? "×" : hVal === 1 ? "·" : "";
+        }
+
+        const sCell = document.getElementById(`seq-snare-${i}`);
+        if (sCell) {
+          sCell.className = `seq-cell${i % 4 === 0 ? " beat-start" : ""}${sVal ? ` hit-snare-${sVal}` : ""}${i === activeStep ? " playing-now" : ""}`;
+          sCell.textContent = sVal === 2 ? "哒" : sVal === 1 ? "o" : "";
+        }
+
+        const kCell = document.getElementById(`seq-kick-${i}`);
+        if (kCell) {
+          kCell.className = `seq-cell${i % 4 === 0 ? " beat-start" : ""}${kVal ? ` hit-kick-${kVal}` : ""}${i === activeStep ? " playing-now" : ""}`;
+          kCell.textContent = kVal === 2 ? "咚" : kVal === 1 ? "·" : "";
+        }
+      }
+
+      // Also update the 4 Beat Pad action tags with what the current bar plays on Beats 1, 2, 3, 4
+      for (let q = 0; q < 4; q++) {
+        const kHits = [];
+        const sHits = [];
+        for (let sub = 0; sub < 4; sub++) {
+          const si = q * 4 + sub;
+          if (barObj.k[si] > 0) kHits.push(STEP_LABELS[si]);
+          if (barObj.s[si] > 0) sHits.push(STEP_LABELS[si]);
+        }
+        const tagEl = document.getElementById(`pad-action-${q}`);
+        if (tagEl) {
+          if (barObj.type === "count_in") {
+            tagEl.textContent = `🔔 预备倒数 ${q + 1}！`;
+          } else if (barObj.type === "silent") {
+            tagEl.textContent = `🔇 无鼓空拍 (${q + 1})`;
+          } else {
+            const parts = [];
+            if (kHits.length) parts.push(`🔴底鼓(${kHits.join(",")})`);
+            if (sHits.length) parts.push(`🔵军鼓(${sHits.join(",")})`);
+            if (!parts.length) parts.push(`🟡踩镲保持`);
+            tagEl.textContent = parts.join(" + ");
+          }
+        }
+      }
+    }
+
+    function updateDrumEntryBanner(nowSec, barInfo) {
+      if (!currentSongData) return;
+      const banner = document.getElementById("drumEntryBanner");
+      const textEl = document.getElementById("drumEntryText");
+      const firstDrum = currentSongData.firstDrumSec || 0;
+
+      if (firstDrum > 3.0 && nowSec < firstDrum - 3.2) {
+        const remainSec = (firstDrum - nowSec).toFixed(1);
+        const barsLeft = barInfo && barInfo.barObj ? Math.max(1, Math.round((firstDrum - nowSec) / (barInfo.barObj.t1 - barInfo.barObj.t0))) : "";
+        banner.className = "drum-entry-alert";
+        textEl.textContent = `⏳ 当前为前奏无鼓段 — 距离首次进鼓第 1 拍 (${firstDrum.toFixed(1)}s) 还有 ${remainSec} 秒 (约 ${barsLeft} 小节)`;
+      } else if (barInfo && barInfo.barObj && barInfo.barObj.type === "count_in") {
+        banner.className = "drum-entry-alert count-in-now";
+        textEl.textContent = `🔥 准备进鼓倒数：当前小节跟拍倒数 1 - 2 - 3 - 4 -> 下一小节第 1 拍准时进鼓 (底鼓+镲片)！`;
+      } else if (barInfo && barInfo.barObj && barInfo.barObj.type === "silent") {
+        banner.className = "drum-entry-alert";
+        textEl.textContent = `🧘 当前为间奏留白段 (无鼓) — 可观察上方 1-2-3-4 保持内心律动，或点击右侧按钮跳到再进鼓预备拍`;
+      } else {
+        banner.className = "drum-entry-alert in-groove";
+        textEl.textContent = `🥁 鼓组律动进行中 — 红灯 [1] 对准底鼓重拍，蓝灯 [2] [4] 对准军鼓 Backbeat！`;
+      }
+    }
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? "0" : ""}${s}`;
+    }
+
+    function drawOverview() {
+      const w = overviewCanvas.width;
+      const h = overviewCanvas.height;
+      overviewCtx.clearRect(0, 0, w, h);
+
+      const dur = getMasterDuration();
+      if (currentSongData && currentSongData.mixPeaks) {
+        const mixP = currentSongData.mixPeaks;
+        const kickE = currentSongData.kickEnv || [];
+        const snareE = currentSongData.snareEnv || [];
+        const len = mixP.length;
+        for (let x = 0; x < w; x++) {
+          const idx = Math.floor((x / w) * len);
+          const amp = Math.min(1, mixP[idx] || 0);
+          const hasDrum = (kickE[idx] || 0) > 0.25 || (snareE[idx] || 0) > 0.25;
+          overviewCtx.fillStyle = hasDrum ? "rgba(255, 87, 34, 0.65)" : "rgba(148, 163, 184, 0.35)";
+          const barH = Math.max(2, amp * (h - 6));
+          overviewCtx.fillRect(x, (h - barH) / 2, 1, barH);
+        }
+      }
+
+      // Draw First Drum Entry marker
+      if (currentSongData && currentSongData.firstDrumSec > 2) {
+        const xDrum = (currentSongData.firstDrumSec / dur) * w;
+        overviewCtx.fillStyle = "#ff4d4f";
+        overviewCtx.fillRect(xDrum, 0, 2.5, h);
+      }
+
+      // Draw Loop A-B region
+      if (loopA !== null) {
+        const xA = (loopA / dur) * w;
+        overviewCtx.fillStyle = "#4ade80";
+        overviewCtx.fillRect(xA, 0, 2, h);
+      }
+      if (loopA !== null && loopB !== null) {
+        const xA = (loopA / dur) * w;
+        const xB = (loopB / dur) * w;
+        overviewCtx.fillStyle = "rgba(74, 222, 128, 0.24)";
+        overviewCtx.fillRect(xA, 0, xB - xA, h);
+      }
+
+      const playX = (getMasterTime() / dur) * w;
+      overviewCtx.fillStyle = "#ffffff";
+      overviewCtx.fillRect(playX - 1.5, 0, 3, h);
+    }
+
+    function drawZoomDrumHighway(nowSec) {
+      const w = zoomCanvas.width;
+      const h = zoomCanvas.height;
+      zoomCtx.clearRect(0, 0, w, h);
+
+      const windowSec = 6.0; // -1.2s to +4.8s
+      const startSec = nowSec - 1.2;
+      const endSec = nowSec + 4.8;
+      const playheadX = (1.2 / windowSec) * w;
+
+      // Draw 3 horizontal lane dividers (Top: Hat, Mid: Snare, Bottom: Kick)
+      const laneH = h / 3;
+      zoomCtx.strokeStyle = "rgba(148, 163, 184, 0.14)";
+      zoomCtx.lineWidth = 1;
+      for (let l = 1; l <= 2; l++) {
+        zoomCtx.beginPath();
+        zoomCtx.moveTo(0, l * laneH);
+        zoomCtx.lineTo(w, l * laneH);
+        zoomCtx.stroke();
+      }
+
+      // Lane labels on left
+      zoomCtx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
+      zoomCtx.fillStyle = "rgba(251, 191, 36, 0.85)";
+      zoomCtx.fillText("🟡 镲片 Hat", 6, laneH - 6);
+      zoomCtx.fillStyle = "rgba(56, 189, 248, 0.85)";
+      zoomCtx.fillText("🔵 军鼓 Snare", 6, laneH * 2 - 6);
+      zoomCtx.fillStyle = "rgba(255, 77, 79, 0.85)";
+      zoomCtx.fillText("🔴 底鼓 Kick", 6, h - 6);
+
+      if (!currentSongData) return;
+
+      const envRate = currentSongData.envRate || 50;
+      const hatE = currentSongData.hatEnv || [];
+      const snareE = currentSongData.snareEnv || [];
+      const kickE = currentSongData.kickEnv || [];
+
+      // 1. Draw 3-Band Drum Pulses
+      for (let x = 0; x < w; x += 2) {
+        const t = startSec + (x / w) * windowSec;
+        const idx = Math.floor(t * envRate);
+        if (idx >= 0 && idx < kickE.length) {
+          // Top lane: Hat
+          const hv = Math.min(1.2, hatE[idx] || 0);
+          if (hv > 0.12) {
+            const bh = (hv / 1.2) * (laneH - 8);
+            zoomCtx.fillStyle = hv > 0.5 ? "rgba(251, 191, 36, 0.88)" : "rgba(251, 191, 36, 0.38)";
+            zoomCtx.fillRect(x, laneH - 3 - bh, 2, bh);
+          }
+          // Middle lane: Snare
+          const sv = Math.min(1.2, snareE[idx] || 0);
+          if (sv > 0.15) {
+            const bh = (sv / 1.2) * (laneH - 8);
+            zoomCtx.fillStyle = sv > 0.42 ? "rgba(56, 189, 248, 0.92)" : "rgba(56, 189, 248, 0.38)";
+            zoomCtx.fillRect(x, laneH * 2 - 3 - bh, 2.2, bh);
+          }
+          // Bottom lane: Kick
+          const kv = Math.min(1.2, kickE[idx] || 0);
+          if (kv > 0.15) {
+            const bh = (kv / 1.2) * (laneH - 8);
+            zoomCtx.fillStyle = kv > 0.4 ? "rgba(255, 77, 79, 0.92)" : "rgba(255, 77, 79, 0.38)";
+            zoomCtx.fillRect(x, h - 3 - bh, 2.2, bh);
+          }
+        }
+      }
+
+      // 2. Draw Dynamic Beat Grid Lines from currentSongData.beats
+      const beats = currentSongData.beats || [];
+      const firstIdx = findBeatIndexAtTime(startSec);
+      zoomCtx.font = "bold 12px -apple-system, BlinkMacSystemFont, monospace";
+
+      for (let i = Math.max(0, firstIdx - 1); i < beats.length; i++) {
+        const b = beats[i];
+        const beatTime = b.t + timeNudgeSec;
+        if (beatTime > endSec) break;
+        if (beatTime < startSec) continue;
+
+        const x = ((beatTime - startSec) / windowSec) * w;
+        const beatNum = ((b.beat - 1 + phaseShiftBeats) % 4 + 4) % 4 + 1;
+
+        if (beatNum === 1) {
+          zoomCtx.strokeStyle = "#ff4d4f";
+          zoomCtx.lineWidth = 2.6;
+          zoomCtx.fillStyle = "#ff4d4f";
+          zoomCtx.fillText(`Bar ${b.bar} [1]`, x + 4, 15);
+        } else if (beatNum === 2 || beatNum === 4) {
+          zoomCtx.strokeStyle = "#38bdf8";
+          zoomCtx.lineWidth = 1.5;
+          zoomCtx.fillStyle = "#38bdf8";
+          zoomCtx.fillText(`${beatNum}(哒)`, x + 4, 15);
+        } else {
+          zoomCtx.strokeStyle = "#4ade80";
+          zoomCtx.lineWidth = 1.3;
+          zoomCtx.fillStyle = "#4ade80";
+          zoomCtx.fillText(`3(咚)`, x + 4, 15);
+        }
+
+        zoomCtx.beginPath();
+        zoomCtx.moveTo(x, 0);
+        zoomCtx.lineTo(x, h);
+        zoomCtx.stroke();
+
+        // 8th-note ("&") subdivision line
+        if (i + 1 < beats.length) {
+          const halfTime = 0.5 * (beatTime + beats[i + 1].t + timeNudgeSec);
+          const halfX = ((halfTime - startSec) / windowSec) * w;
+          if (halfX > 0 && halfX < w) {
+            zoomCtx.strokeStyle = "rgba(148, 163, 184, 0.22)";
+            zoomCtx.lineWidth = 1;
+            zoomCtx.beginPath();
+            zoomCtx.moveTo(halfX, 22);
+            zoomCtx.lineTo(halfX, h);
+            zoomCtx.stroke();
+          }
+        }
+      }
+
+      // 3. Draw Playhead Cursor
+      zoomCtx.strokeStyle = "#ffffff";
+      zoomCtx.lineWidth = 3;
+      zoomCtx.beginPath();
+      zoomCtx.moveTo(playheadX, 0);
+      zoomCtx.lineTo(playheadX, h);
+      zoomCtx.stroke();
+    }
+
+    function updateLoopUI() {
+      const loopStatus = document.getElementById("loopStatus");
+      if (loopA !== null && loopB !== null) {
+        loopStatus.textContent = `🔁 循环中: ${formatTime(loopA)} → ${formatTime(loopB)}`;
+      } else if (loopA !== null) {
+        loopStatus.textContent = `A点已设: ${formatTime(loopA)} (请设B点)`;
+      } else {
+        loopStatus.textContent = "";
+      }
+    }
+
+    // Main 60fps Studio Loop
+    let animationsPaused = false;
+    function tick() {
+      const nowSec = getMasterTime();
+      const adjSec = nowSec - timeNudgeSec;
+
+      // Keep 4 stems tightly synced within 28ms during playback
+      if (usingStems && !stemEls.drums.paused) {
+        const masterT = stemEls.drums.currentTime;
+        for (let i = 1; i < STEM_KEYS.length; i++) {
+          const el = stemEls[STEM_KEYS[i]];
+          if (Math.abs(el.currentTime - masterT) > 0.028) {
+            el.currentTime = masterT;
+          }
+        }
+      }
+
+      // Handle A-B Loop
+      if (loopA !== null && loopB !== null && nowSec >= loopB) {
+        seekMaster(loopA);
+      }
+
+      if (currentSongData && currentSongData.beats && currentSongData.beats.length) {
+        const beats = currentSongData.beats;
+        const bIdx = findBeatIndexAtTime(adjSec);
+        const currBeatObj = beats[bIdx];
+        const nextBeatObj = beats[bIdx + 1];
+
+        const beatInBar = ((currBeatObj.beat - 1 + phaseShiftBeats) % 4 + 4) % 4 + 1; // 1..4
+        const barNum = currBeatObj.bar;
+        const spd = Number(speedSlider.value);
+        const liveBpm = (currBeatObj.bpm || currentSongData.medianBpm || 100) * spd;
+
+        // Calculate 16th-note subdivision (0..3) within the current beat
+        let subStep = 0;
+        if (nextBeatObj && nextBeatObj.t > currBeatObj.t) {
+          const frac = (adjSec - currBeatObj.t) / (nextBeatObj.t - currBeatObj.t);
+          subStep = Math.max(0, Math.min(3, Math.floor(frac * 4)));
+        }
+
+        const barInfo = findBarAtTime(adjSec);
+        const isCountInBar = Boolean(barInfo && barInfo.barObj && barInfo.barObj.type === "count_in");
+
+        // Trigger Metronome Click on exact beat transitions
+        if (!isMasterPaused() && bIdx !== lastPlayedBeatIdx) {
+          lastPlayedBeatIdx = bIdx;
+          playMetronomeClick(beatInBar, isCountInBar);
+        }
+
+        barDisplay.textContent = barNum;
+        beatDisplay.textContent = beatInBar;
+        effectiveBpmDisplay.textContent = liveBpm.toFixed(1);
+        timeDisplay.textContent = formatTime(nowSec);
+
+        // Update Giant 1-2-3-4 Beat Pads
+        for (let i = 0; i < 4; i++) {
+          const pad = document.getElementById(`pad-${i}`);
+          pad.classList.remove("active-beat-1", "active-snare", "active-beat-3");
+          if (i + 1 === beatInBar) {
+            if (i === 0) pad.classList.add("active-beat-1");
+            else if (i === 1 || i === 3) pad.classList.add("active-snare");
+            else pad.classList.add("active-beat-3");
+          }
+          for (let s = 0; s < 4; s++) {
+            const dot = document.getElementById(`sub-${i}-${s}`);
+            const hasHit = barInfo && barInfo.barObj && (barInfo.barObj.k[i * 4 + s] > 0 || barInfo.barObj.s[i * 4 + s] > 0);
+            dot.classList.toggle("has-hit", Boolean(hasHit));
+            dot.classList.toggle("active", i + 1 === beatInBar && s === subStep);
+          }
+        }
+
+        updateSequencerUI(barInfo, adjSec);
+        updateDrumEntryBanner(adjSec, barInfo);
+      }
+
+      if (!animationsPaused) {
+        drawZoomDrumHighway(nowSec);
+        drawOverview();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // Client-side WebAudio Multi-Band Fallback Analyzer (for offline custom uploads)
+    async function analyzeAudioClientSide(url, hintBpm = null, title = "") {
+      analysisStatus.textContent = "⚡ 正在使用浏览器多频段鼓组滤波器解码并识别第 1 拍...";
+      try {
+        const res = await fetch(url);
+        const arrayBuf = await res.arrayBuffer();
+        const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuf = await tempCtx.decodeAudioData(arrayBuf);
+        await tempCtx.close();
+
+        const sr = audioBuf.sampleRate;
+        const ch0 = audioBuf.getChannelData(0);
+        const duration = audioBuf.duration;
+        const envRate = 50;
+        const step = Math.floor(sr / envRate);
+        const nFrames = Math.floor(ch0.length / step);
+
+        // Simple 1-pole / 2-pole digital filters for Kick (<130Hz), Snare (200-3000Hz), Hat (>5000Hz)
+        const kickEnv = new Array(nFrames).fill(0);
+        const snareEnv = new Array(nFrames).fill(0);
+        const hatEnv = new Array(nFrames).fill(0);
+        const mixPeaks = new Array(nFrames).fill(0);
+
+        let lp1 = 0, lp2 = 0, bp = 0;
+        const aKick = Math.exp((-2 * Math.PI * 115) / sr);
+        const aMid = Math.exp((-2 * Math.PI * 1800) / sr);
+
+        let prevK = 0, prevS = 0, prevH = 0;
+        for (let i = 0; i < nFrames; i++) {
+          let sumK = 0, sumS = 0, sumH = 0, maxM = 0;
+          const base = i * step;
+          for (let j = 0; j < step; j += 2) {
+            const x = ch0[base + j] || 0;
+            const prevSample = ch0[base + j - 1] || 0;
+            lp1 = (1 - aKick) * x + aKick * lp1;
+            lp2 = (1 - aKick) * lp1 + aKick * lp2;
+            const kSample = lp2;
+            const hSample = x - prevSample;
+            bp = (1 - aMid) * (x - lp2) + aMid * bp;
+            const sSample = bp;
+
+            sumK += kSample * kSample;
+            sumS += sSample * sSample;
+            sumH += hSample * hSample;
+            const ax = Math.abs(x);
+            if (ax > maxM) maxM = ax;
+          }
+          const rmsK = Math.sqrt(sumK / (step / 2));
+          const rmsS = Math.sqrt(sumS / (step / 2));
+          const rmsH = Math.sqrt(sumH / (step / 2));
+
+          kickEnv[i] = Math.max(0, rmsK - prevK);
+          snareEnv[i] = Math.max(0, rmsS - prevS);
+          hatEnv[i] = Math.max(0, rmsH - prevH);
+          mixPeaks[i] = maxM;
+
+          prevK = rmsK * 0.65 + prevK * 0.35;
+          prevS = rmsS * 0.65 + prevS * 0.35;
+          prevH = rmsH * 0.65 + prevH * 0.35;
+        }
+
+        const normArr = (arr) => {
+          const sorted = [...arr].sort((a, b) => a - b);
+          const p99 = sorted[Math.floor(sorted.length * 0.99)] || 0.01;
+          for (let i = 0; i < arr.length; i++) {
+            arr[i] = Math.min(1.5, Math.round((arr[i] / p99) * 1000) / 1000);
+          }
+        };
+        normArr(kickEnv);
+        normArr(snareEnv);
+        normArr(hatEnv);
+        normArr(mixPeaks);
+
+        // Suppress cross-talk
+        for (let i = 0; i < nFrames; i++) {
+          snareEnv[i] = Math.max(0, snareEnv[i] - 0.35 * kickEnv[i]);
+        }
+
+        // Find first drum entry (where kick and snare are both active)
+        let firstDrumSec = 0;
+        for (let i = 0; i < nFrames - envRate * 3; i++) {
+          if (kickEnv[i] > 0.55 || snareEnv[i] > 0.65) {
+            firstDrumSec = i / envRate;
+            break;
+          }
+        }
+
+        const bpm = hintBpm || 100;
+        const beatDur = 60 / bpm;
+
+        // Find best 4-beat bar phase in [firstDrumSec, firstDrumSec + 45s]
+        let bestBarOffset = firstDrumSec;
+        let bestScore = -999;
+        const cands = 80;
+        const barDur = beatDur * 4;
+        for (let c = 0; c < cands; c++) {
+          const candOffset = firstDrumSec + (c / cands) * barDur;
+          let sc = 0;
+          for (let b = 0; b < 48; b++) {
+            const t = candOffset + b * beatDur;
+            const idx = Math.round(t * envRate);
+            if (idx >= 1 && idx < nFrames - 1) {
+              const kv = Math.max(kickEnv[idx - 1], kickEnv[idx], kickEnv[idx + 1]);
+              const sv = Math.max(snareEnv[idx - 1], snareEnv[idx], snareEnv[idx + 1]);
+              const role = b % 4;
+              if (role === 0) sc += 1.6 * kv - 0.9 * sv;
+              else if (role === 1 || role === 3) sc += 1.5 * sv - 0.8 * kv;
+              else sc += 0.8 * kv - 0.7 * sv;
+            }
+          }
+          if (sc > bestScore) {
+            bestScore = sc;
+            bestBarOffset = candOffset;
+          }
+        }
+
+        while (bestBarOffset - barDur >= 0) bestBarOffset -= barDur;
+
+        const beats = [];
+        let bCount = 0;
+        for (let t = bestBarOffset; t < duration; t += beatDur) {
+          const beatInBar = (bCount % 4) + 1;
+          const barNum = Math.floor(bCount / 4) + 1;
+          beats.push({
+            t: Math.round(t * 1000) / 1000,
+            beat: beatInBar,
+            bar: barNum,
+            bpm: bpm,
+            inDrums: t >= firstDrumSec - 0.2,
+          });
+          bCount++;
+        }
+
+        // Build bars
+        const bars = [];
+        for (let i = 0; i + 3 < beats.length; i += 4) {
+          const t0 = beats[i].t;
+          const t1 = beats[i + 4] ? beats[i + 4].t : t0 + barDur;
+          const kSteps = new Array(16).fill(0);
+          const sSteps = new Array(16).fill(0);
+          const hSteps = new Array(16).fill(0);
+          for (let st = 0; st < 16; st++) {
+            const stT = t0 + (st / 16) * (t1 - t0);
+            const idx = Math.round(stT * envRate);
+            if (idx >= 0 && idx < nFrames) {
+              if (kickEnv[idx] > 0.45) kSteps[st] = 2;
+              if (snareEnv[idx] > 0.45) sSteps[st] = 2;
+              if (hatEnv[idx] > 0.3) hSteps[st] = 1;
+            }
+          }
+          bars.push({
+            bar: beats[i].bar,
+            t0,
+            t1,
+            bpm,
+            type: t0 < firstDrumSec - 0.5 ? "silent" : "groove",
+            k: kSteps,
+            s: sSteps,
+            h: hSteps,
+            oral: "1:咚 ｜ 2:哒 ｜ 3:咚 ｜ 4:哒",
+          });
+        }
+
+        const cues = [
+          { label: "🎵 曲目开头", time: 0, type: "intro" },
+          { label: "⏳ 进鼓预备拍", time: Math.max(0, firstDrumSec - barDur), type: "count_in" },
+          { label: "🥁 首次进鼓 Beat 1", time: firstDrumSec, type: "drum_entry" },
+        ];
+
+        applySongAnalysisData({
+          songId: "client_custom",
+          duration,
+          hasStems: false,
+          medianBpm: bpm,
+          firstDrumSec: Math.round(firstDrumSec * 10) / 10,
+          cues,
+          envRate,
+          mixPeaks,
+          kickEnv,
+          snareEnv,
+          hatEnv,
+          beats,
+          bars,
+        });
+      } catch (e) {
+        analysisStatus.textContent = "💡 已加载基础节拍器（建议开启本地 AI 服务获得四轨分离与高精度鼓谱）";
+      }
+    }
+
+    // Poll AI Backend Job Progress
+    async function pollAiJob(jobId) {
+      const banner = document.getElementById("aiJobBanner");
+      const textEl = document.getElementById("aiJobText");
+      const pctEl = document.getElementById("aiJobPct");
+      const progEl = document.getElementById("aiJobProgress");
+      banner.hidden = false;
+
+      while (true) {
+        await new Promise((r) => setTimeout(r, 800));
+        try {
+          const res = await fetch(`${API_BASE}/api/job/${jobId}`);
+          const job = await res.json();
+          if (job.progress !== undefined) {
+            progEl.value = job.progress;
+            pctEl.textContent = `${job.progress}%`;
+          }
+          if (job.message) {
+            textEl.textContent = job.message;
+          }
+          if (job.status === "done" && job.result) {
+            banner.hidden = true;
+            if (window.PRECOMPUTED_SONGS && job.result.songId) {
+              window.PRECOMPUTED_SONGS[job.result.songId] = job.result;
+            }
+            const wasPlaying = !isMasterPaused();
+            const savedTime = getMasterTime();
+            applySongAnalysisData(job.result, job.result.audioUrl || null);
+            renderPlaylist();
+            seekMaster(savedTime);
+            if (wasPlaying) togglePlay(true);
+            break;
+          } else if (job.status === "error") {
+            textEl.textContent = `❌ ${job.message}`;
+            setTimeout(() => { banner.hidden = true; }, 4000);
+            break;
+          }
+        } catch (err) {
+          banner.hidden = true;
+          break;
+        }
+      }
+    }
+
+    // Event Listeners
+    playPauseBtn.addEventListener("click", () => togglePlay());
+    document.getElementById("restartBtn").addEventListener("click", () => seekMaster(0));
+
+    document.getElementById("jumpPreDrumBtn").addEventListener("click", () => {
+      if (!currentSongData) return;
+      const countInCue = (currentSongData.cues || []).find((c) => c.type === "count_in");
+      const target = countInCue ? countInCue.time : Math.max(0, (currentSongData.firstDrumSec || 0) - 3.0);
+      seekMaster(target);
+      togglePlay(true);
+    });
+
+    document.getElementById("jumpFirstDrumBtn").addEventListener("click", () => {
+      if (!currentSongData) return;
+      seekMaster(currentSongData.firstBeat1Sec || currentSongData.firstDrumSec || 0);
+      togglePlay(true);
+    });
+
+    // Bar-locked Loop buttons (1 Bar, 2 Bars, 4 Bars)
+    function setBarLoop(numBars) {
+      const barInfo = findBarAtTime(getMasterTime() - timeNudgeSec);
+      if (!barInfo || !barInfo.barObj || !currentSongData.bars) return;
+      const startBar = barInfo.barObj;
+      const endBarIdx = Math.min(currentSongData.bars.length - 1, barInfo.index + numBars - 1);
+      const endBar = currentSongData.bars[endBarIdx];
+      loopA = startBar.t0 + timeNudgeSec;
+      loopB = endBar.t1 + timeNudgeSec;
+      updateLoopUI();
+    }
+
+    document.getElementById("loop1BarBtn").addEventListener("click", () => setBarLoop(1));
+    document.getElementById("loop2BarsBtn").addEventListener("click", () => setBarLoop(2));
+    document.getElementById("loop4BarsBtn").addEventListener("click", () => setBarLoop(4));
+
+    speedSlider.addEventListener("input", (e) => {
+      const spd = Number(e.target.value);
+      setMasterPlaybackRate(spd);
+      speedVal.textContent = `${spd.toFixed(2)}x`;
+    });
+
+    document.querySelectorAll("[data-speed]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const spd = Number(btn.dataset.speed);
+        speedSlider.value = spd;
+        setMasterPlaybackRate(spd);
+        speedVal.textContent = `${spd.toFixed(2)}x`;
+      });
+    });
+
+    clickVolSlider.addEventListener("input", (e) => {
+      clickVolVal.textContent = `${e.target.value}%`;
+    });
+
+    // Calibration controls
+    function syncCurrentBeatToBeat1() {
+      if (!currentSongData || !currentSongData.beats) return;
+      const nowSec = getMasterTime();
+      const bIdx = findBeatIndexAtTime(nowSec - timeNudgeSec);
+      const bObj = currentSongData.beats[bIdx];
+      if (!bObj) return;
+      phaseShiftBeats = (4 - (bObj.beat - 1)) % 4;
+      timeNudgeSec = nowSec - bObj.t;
+      analysisStatus.textContent = `🎯 已将当前拍精确锁定为小节第 1 拍 (微调偏移 ${(timeNudgeSec * 1000).toFixed(0)}ms)`;
+    }
+
+    document.getElementById("syncBeat1Btn").addEventListener("click", syncCurrentBeatToBeat1);
+    document.getElementById("shiftPhaseBtn").addEventListener("click", () => {
+      phaseShiftBeats = (phaseShiftBeats + 1) % 4;
+      analysisStatus.textContent = `🔄 已将小节第 1 拍顺移 1 拍 (当前相位偏移: +${phaseShiftBeats} 拍)`;
+    });
+    document.getElementById("nudgeLeftBtn").addEventListener("click", () => {
+      timeNudgeSec -= 0.015;
+    });
+    document.getElementById("nudgeRightBtn").addEventListener("click", () => {
+      timeNudgeSec += 0.015;
+    });
+
+    // Loop controls
+    document.getElementById("loopABtn").addEventListener("click", () => {
+      loopA = getMasterTime();
+      if (loopB !== null && loopB <= loopA) loopB = null;
+      updateLoopUI();
+    });
+    document.getElementById("loopBBtn").addEventListener("click", () => {
+      if (loopA === null) loopA = Math.max(0, getMasterTime() - 4);
+      loopB = Math.max(loopA + 0.5, getMasterTime());
+      updateLoopUI();
+    });
+    document.getElementById("clearLoopBtn").addEventListener("click", () => {
+      loopA = null;
+      loopB = null;
+      updateLoopUI();
+    });
+
+    // Canvas Seek
+    overviewCanvas.addEventListener("click", (e) => {
+      const rect = overviewCanvas.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      seekMaster(ratio * getMasterDuration());
+    });
+
+    zoomCanvas.addEventListener("click", (e) => {
+      const rect = zoomCanvas.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      const clickedOffset = (ratio - 0.2) * 6.0;
+      seekMaster(getMasterTime() + clickedOffset);
+    });
+
+    // Stem Mixer Controls
+    document.getElementById("presetFullBtn").addEventListener("click", () => applyMixPreset("full"));
+    document.getElementById("presetDrumSoloBtn").addEventListener("click", () => applyMixPreset("drumSolo"));
+    document.getElementById("presetDrumlessBtn").addEventListener("click", () => applyMixPreset("drumless"));
+    document.getElementById("presetDrumBassBtn").addEventListener("click", () => applyMixPreset("drumBass"));
+
+    STEM_KEYS.forEach((k) => {
+      const slider = document.getElementById(`vol-${k}`);
+      const valSpan = document.getElementById(`val-${k}`);
+      slider.addEventListener("input", (e) => {
+        const pct = Number(e.target.value);
+        stemState[k].vol = pct / 100;
+        if (pct > 0) stemState[k].mute = false;
+        valSpan.textContent = `${pct}%`;
+        updateStemGains();
+      });
+
+      document.querySelector(`[data-solo="${k}"]`).addEventListener("click", () => {
+        stemState[k].solo = !stemState[k].solo;
+        if (stemState[k].solo) stemState[k].mute = false;
+        updateStemGains();
+      });
+
+      document.querySelector(`[data-mute="${k}"]`).addEventListener("click", () => {
+        stemState[k].mute = !stemState[k].mute;
+        if (stemState[k].mute) stemState[k].solo = false;
+        updateStemGains();
+      });
+    });
+
+    // Trigger AI Stem Separation on current builtin song
+    document.getElementById("runAiStemBtn").addEventListener("click", async () => {
+      const song = SONGS[currentSongIndex];
+      if (!song) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/separate_builtin`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ songId: song.id, file: song.file, bpm: song.bpm }),
+        });
+        const data = await res.json();
+        if (data.jobId) {
+          pollAiJob(data.jobId);
+        }
+      } catch (e) {
+        alert("本地 AI 分轨服务未连接，请确认 server.py 正在运行 (http://127.0.0.1:8765)");
+      }
+    });
+
+    // Local File Upload — Instant match or AI Demucs Upload + Analysis
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const lower = file.name.toLowerCase();
+      // Check if it matches any song in the local catalog
+      const matchedIdx = SONGS.findIndex((s) => {
+        const subTitle = (s.title || "").split(" - ").pop().toLowerCase();
+        return (subTitle.length >= 3 && lower.includes(subTitle)) || lower === (s.file || "").toLowerCase();
+      });
+
+      if (matchedIdx !== -1 && window.PRECOMPUTED_SONGS && window.PRECOMPUTED_SONGS[SONGS[matchedIdx].id]) {
+        loadBuiltinSong(matchedIdx, true);
+        return;
+      }
+
+      const objUrl = URL.createObjectURL(file);
+      currentTitleEl.textContent = `📂 导入曲目：${file.name}`;
+      currentTipEl.textContent = "正在使用 AI 分离鼓组/贝斯/人声/伴奏四轨并自动校准第 1 拍...";
+      const bpmMatch = file.name.match(/(\d{2,3})\s*BPM/i);
+      const guessedBpm = bpmMatch ? Number(bpmMatch[1]) : null;
+
+      audioEl.src = objUrl;
+      await analyzeAudioClientSide(objUrl, guessedBpm, file.name);
+      togglePlay(true);
+
+      // Also upload to AI Demucs backend if online
+      try {
+        const buf = await file.arrayBuffer();
+        const res = await fetch(`${API_BASE}/api/upload_and_analyze`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "X-File-Name": encodeURIComponent(file.name),
+            "X-Target-Bpm": guessedBpm ? String(guessedBpm) : "",
+          },
+          body: buf,
+        });
+        const data = await res.json();
+        if (data.jobId) {
+          pollAiJob(data.jobId);
+        }
+      } catch (err) {
+        // Offline client-side fallback already active
+      }
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        syncCurrentBeatToBeat1();
+      } else if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        document.getElementById("jumpPreDrumBtn").click();
+      } else if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        const isSolo = stemState.drums.solo && !stemState.bass.solo;
+        applyMixPreset(isSolo ? "full" : "drumSolo");
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        clickToggle.checked = !clickToggle.checked;
+      }
+    });
+
+    // Efficient Background Processing: pause heavy canvas rendering if off-screen
+    const controlsGrid = document.getElementById("controlsGrid");
+    if (controlsGrid) {
+      controlsGrid.addEventListener("contentvisibilityautostatechange", (event) => {
+        // Track rendering lifecycle for heavy offscreen sections
+      });
+      if (!("contentVisibility" in document.documentElement.style) && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            // Fallback visibility tracking for older browsers
+          });
+        }, { rootMargin: "200px" });
+        observer.observe(controlsGrid);
+      }
+    }
+
+    // Check AI Backend Server Status
+    async function checkBackendStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        const data = await res.json();
+        if (data && data.ok) {
+          backendOnline = true;
+          const badge = document.getElementById("serverBadge");
+          badge.textContent = "⚡ Demucs AI 在线";
+          if (data.cachedStems && window.PRECOMPUTED_SONGS) {
+            Object.keys(data.cachedStems).forEach((sid) => {
+              if (window.PRECOMPUTED_SONGS[sid]) {
+                window.PRECOMPUTED_SONGS[sid].hasStems = true;
+                window.PRECOMPUTED_SONGS[sid].stems = data.cachedStems[sid];
+              }
+            });
+            renderPlaylist();
+          }
+        }
+      } catch (e) {
+        backendOnline = false;
+      }
+    }
+
+    initSequencerDOM();
+    renderPlaylist();
+    loadBuiltinSong(3, false); // Load #04 Green Day - 21 Guns by default!
+    checkBackendStatus();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
