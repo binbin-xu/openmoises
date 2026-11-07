@@ -620,3 +620,43 @@ def analyze_song(audio_path, song_id, target_bpm=None, force_recompute=False):
         json.dump(result, f, ensure_ascii=False)
 
     return result
+
+
+def ensure_demucs_model():
+    """
+    Verify that the pretrained Demucs htdemucs model (adefossez/HTDemucs, ~81 MB)
+    is present in local .cache/huggingface, downloading it automatically if missing.
+    """
+    import torch
+    from demucs.pretrained import get_model
+
+    device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"🤖 Loading / verifying Demucs 'htdemucs' pretrained model (device={device})...")
+    model = get_model("htdemucs").to(device).eval()
+    print(f"✅ Demucs 'htdemucs' 4-stem model ready (sources: {model.sources}, samplerate: {model.samplerate} Hz)")
+    return model
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="OpenMoises AI Drum Stem Separator & Beat/Groove Analyzer")
+    parser.add_argument("--download-model", action="store_true", help="Download and verify the Demucs htdemucs model weights")
+    parser.add_argument("--file", type=str, help="Path to an audio file (.m4a/.mp3/.wav/.flac) to separate and analyze")
+    parser.add_argument("--song-id", type=str, default=None, help="Optional song ID for caching under data/stems_cache/<song_id>")
+    parser.add_argument("--bpm", type=float, default=None, help="Optional target BPM hint")
+    args = parser.parse_args()
+
+    if args.download_model:
+        ensure_demucs_model()
+    elif args.file:
+        audio_path = os.path.abspath(args.file)
+        sid = args.song_id or os.path.splitext(os.path.basename(audio_path))[0].lower().replace(" ", "_")[:32]
+        print(f"🎧 Step 1/2: Separating 4 stems with Demucs htdemucs for {os.path.basename(audio_path)}...")
+        separate_stems_demucs(audio_path, sid, progress_cb=lambda p, m: print(f"  [{p:3d}%] {m}"))
+        print("🥁 Step 2/2: Running multi-band Beat 1 & 16-step groove transcription...")
+        res = analyze_song(audio_path, sid, target_bpm=args.bpm, force_recompute=True)
+        print(f"✅ Done! Median BPM: {res['medianBpm']}, First Drum Entry: {res['firstDrumSec']}s, First Beat 1: {res['firstBeat1Sec']}s")
+    else:
+        parser.print_help()
+

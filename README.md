@@ -65,15 +65,22 @@ openmoises/
 
 ## 🚀 Quick Start / 快速开始
 
-### 1. Install Dependencies / 安装依赖
+### 1. Install Dependencies & Pre-Download Demucs AI Model / 安装依赖并下载 Demucs 模型
 
 Requires **Python 3.10+** and `ffmpeg`.
+
+The **Demucs `htdemucs` 4-stem AI model** (`adefossez/HTDemucs`, ~81 MB) is **not stored as a raw binary in Git** to keep the repository lightweight. Instead, `drum_engine.py` automatically downloads and caches the pretrained weights into `.cache/huggingface/` via `demucs.pretrained.get_model("htdemucs")`:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Pre-download and verify the Demucs htdemucs 4-stem AI model (~81 MB)
+./.venv/bin/python drum_engine.py --download-model
 ```
+
+*(Note: Double-clicking `start_studio.command` on macOS will automatically create `.venv`, install `requirements.txt`, and run `--download-model` on first launch!)*
 
 ### 2. Start the Local Studio Server / 启动本地服务
 
@@ -89,6 +96,10 @@ Or double-click `start_studio.command` on macOS. Then open:
 
 - **Option A — Browser Upload**: Click **`📂 导入任意音乐 (自动分轨+找1拍)`** in the left sidebar to upload any `.m4a`, `.mp3`, `.wav`, or `.flac` file.
 - **Option B — Local Folder Auto-Discovery**: Drop your audio files into `data/songs/` (optionally named like `01 [入门-92BPM] Artist - Title.m4a`) and refresh the page — `server.py` will automatically discover and list them.
+- **Option C — CLI Separation & Analysis**:
+  ```bash
+  ./.venv/bin/python drum_engine.py --file "path/to/song.m4a" --bpm 80
+  ```
 
 ---
 
